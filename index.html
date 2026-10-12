@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScripBooks or LedgerFolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --page: #F8FAFC;
+    --paper: #FFFFFF;
+    --slate: #ECF3FA;
+    --slate-2: #E2EFFC;
+    --rule: #DAE1E7;
+    --rule-strong: #B9C6D6;
+    --ink: #0D1824;
+    --ink-2: #1E2E40;
+    --muted: #55606D;
+    --navy: #1B3B5B;
+    --on-navy: #FFFFFF;
+    --band: #1B3B5B;
+    --band-ink: #FFFFFF;
+    --band-muted: rgba(255, 255, 255, 0.72);
+    --band-rule: rgba(255, 255, 255, 0.22);
+    --sheet-border: transparent;
+    --sheet-shadow: 0 24px 48px -24px rgba(13, 24, 36, 0.55), 0 1px 0 rgba(13, 24, 36, 0.08);
+    --credit: #007E4B;
+    --credit-soft: #DAF9E7;
+    --debit: #D41A1D;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #0B1522; --paper: #132234; --slate: #182B41; --slate-2: #1C3450; --rule: #26394F; --rule-strong: #3A5068;
+      --ink: #E6EDF5; --ink-2: #C7D3E0; --muted: #98A9BD; --navy: #5F9EDE; --on-navy: #0B1522;
+      --band: #12253A; --band-ink: #E6EDF5; --band-muted: rgba(230, 237, 245, 0.7); --band-rule: rgba(230, 237, 245, 0.18);
+      --sheet-border: #3A5068; --sheet-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.7);
+      --credit: #38B37C; --credit-soft: #12362A; --debit: #FF6E61;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #0B1522; --paper: #132234; --slate: #182B41; --slate-2: #1C3450; --rule: #26394F; --rule-strong: #3A5068;
+    --ink: #E6EDF5; --ink-2: #C7D3E0; --muted: #98A9BD; --navy: #5F9EDE; --on-navy: #0B1522;
+    --band: #12253A; --band-ink: #E6EDF5; --band-muted: rgba(230, 237, 245, 0.7); --band-rule: rgba(230, 237, 245, 0.18);
+    --sheet-border: #3A5068; --sheet-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.7);
+    --credit: #38B37C; --credit-soft: #12362A; --debit: #FF6E61;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    padding-block: 0; padding-inline: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--navy); text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+  .wrap { max-width: 1120px; margin-inline: auto; }
+  .mono { font-family: var(--mono); font-size: 0.92em; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: 0; text-align: right; white-space: nowrap; }
+  h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+  p { margin: 0; }
+  ul, ol { margin: 0; padding: 0; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font: inherit; font-size: 15px; font-weight: 600; line-height: 1; text-decoration: none;
+    padding: 13px 20px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+  }
+  .btn-navy { background: var(--navy); color: var(--on-navy); }
+  .btn-navy:hover { filter: brightness(1.08); }
+  .btn-light { background: var(--on-navy); color: var(--navy); }
+  .btn-light:hover { filter: brightness(0.96); }
+  .btn-quiet { background: transparent; color: inherit; border-color: currentColor; opacity: 0.85; }
+  .btn-quiet:hover { opacity: 1; }
+  .btn-sm { font-size: 14px; padding: 9px 14px; }
+
+  /* Top bar */
+  .top {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    margin-inline: -20px; padding-inline: 20px;
+    background: color-mix(in oklab, var(--page) 90%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--rule);
+  }
+  .top .in { max-width: 1120px; margin-inline: auto; display: flex; align-items: center; gap: 24px; height: 60px; }
+  .lockup { display: inline-flex; align-items: center; gap: 9px; color: inherit; text-decoration: none; }
+  .lockup .mark { width: 24px; height: 24px; color: var(--navy); flex-shrink: 0; }
+  .lockup .word { font-weight: 600; font-size: 18px; letter-spacing: -0.01em; }
+  .top nav { display: flex; gap: 2px; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+  .top nav::-webkit-scrollbar { display: none; }
+  .top nav a { font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; padding: 8px 11px; white-space: nowrap; border-radius: 4px; }
+  .top nav a:hover { color: var(--ink); background: var(--slate); }
+  .top .cta { flex-shrink: 0; }
+
+  /* Hero band */
+  .hero {
+    margin-inline: -20px; padding-inline: 20px; background: var(--band); color: var(--band-ink);
+    padding-block: 64px 72px;
+  }
+  .hero .in { max-width: 1120px; margin-inline: auto; display: grid; gap: 56px; grid-template-columns: minmax(0, 1fr) minmax(0, 520px); align-items: center; }
+  .hero .eyebrow { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.18em; color: var(--band-muted); margin-bottom: 22px; }
+  .hero h1 { font-size: clamp(40px, 5.6vw, 66px); line-height: 1.02; letter-spacing: -0.028em; max-width: 13ch; }
+  .hero .lede { font-size: 18px; line-height: 1.55; color: var(--band-muted); max-width: 48ch; margin-top: 24px; }
+  .hero .lede strong { color: var(--band-ink); font-weight: 500; }
+  .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+  .hero .proof { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--band-rule); font-size: 14px; color: var(--band-muted); max-width: 52ch; line-height: 1.5; }
+
+  /* The voucher sheet: the one lifted object on the page */
+  .voucher {
+    background: var(--paper); color: var(--ink); border: 1px solid var(--sheet-border); border-radius: 4px;
+    box-shadow: var(--sheet-shadow); padding: 20px 22px 18px; font-size: 13.5px; line-height: 1.45;
+  }
+  .v-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .v-type { font-weight: 600; font-size: 15px; }
+  .v-meta { color: var(--muted); font-size: 12.5px; margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .v-status { font-size: 12px; font-weight: 600; color: var(--credit); background: var(--credit-soft); padding: 4px 9px; border-radius: 3px; white-space: nowrap; }
+  .v-src { margin-top: 12px; padding: 8px 10px; background: var(--slate); font-size: 12.5px; color: var(--ink-2); border-radius: 3px; }
+  .v-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-variant-numeric: tabular-nums; }
+  .v-table th { font-size: 11px; font-weight: 600; color: var(--muted); text-align: left; padding: 0 0 7px; border-bottom: 1px solid var(--rule-strong); }
+  .v-table th.num { text-align: right; }
+  .v-table td { padding: 5px 0; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+  .v-table td + td { padding-left: 16px; }
+  .v-table tr.sub td { color: var(--muted); font-size: 12.5px; padding-top: 2px; padding-bottom: 4px; border-bottom: 0; }
+  .v-table tr.sub td:first-child { padding-left: 18px; }
+  .v-table tr.sub + tr.acct td { border-top: 1px solid var(--rule); }
+  .v-table tfoot td { font-weight: 600; border-bottom: 3px double var(--ink); border-top: 1px solid var(--ink); padding-top: 7px; padding-bottom: 6px; }
+  .v-table .dr { color: var(--ink); }
+  .v-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .v-foot b { color: var(--credit); font-weight: 600; }
+
+  /* Sections */
+  section { padding-block: 72px 8px; border-top: 1px solid var(--rule); scroll-margin-top: 72px; }
+  section:first-of-type { border-top: 0; }
+  .sec-head { max-width: 62ch; margin-bottom: 40px; }
+  .sec-head h2 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.1; letter-spacing: -0.025em; max-width: 22ch; }
+  .sec-head .lede { font-size: 17.5px; line-height: 1.55; color: var(--ink-2); margin-top: 16px; max-width: 58ch; }
+  .sec-head .lede + .lede { margin-top: 12px; }
+
+  /* The problem: two chains */
+  .chains { display: grid; gap: 0; border-top: 1px solid var(--rule); }
+  .chain-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 260px; gap: 28px; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--rule); }
+  .chain-row .who { font-weight: 600; font-size: 15px; }
+  .chain-row .who small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 0; }
+  .chain span { border: 1px solid var(--rule-strong); background: var(--paper); padding: 8px 12px; font-size: 13.5px; font-weight: 500; white-space: nowrap; border-radius: 3px; }
+  .chain i { display: block; width: 22px; height: 1px; background: var(--rule-strong); flex-shrink: 0; }
+  .chain-row.now .chain span { border-color: var(--navy); background: var(--slate-2); color: var(--ink); }
+  .chain-row.now .chain i { background: var(--navy); }
+  .chain-row .verdict { font-size: 14.5px; color: var(--ink-2); line-height: 1.5; }
+  .chain-row.now .verdict { color: var(--ink); font-weight: 500; }
+
+  /* How it works: numbered because it is a sequence */
+  .steps { display: grid; gap: 56px; }
+  .step { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 40px; align-items: start; }
+  .step .n { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--rule-strong); display: inline-block; padding-bottom: 6px; margin-bottom: 14px; }
+  .step h3 { font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; }
+  .step p { margin-top: 12px; color: var(--ink-2); font-size: 15.5px; max-width: 42ch; }
+  .step p + p { margin-top: 10px; }
+
+  /* Product screen facsimiles */
+  .screen { border: 1px solid var(--rule-strong); background: var(--paper); border-radius: 4px; overflow: hidden; font-size: 12.5px; line-height: 1.4; min-width: 0; }
+  .s-bar { display: flex; align-items: center; gap: 14px; padding: 8px 14px; background: var(--slate); border-bottom: 1px solid var(--rule); font-size: 11.5px; color: var(--muted); }
+  .s-bar b { color: var(--ink); font-weight: 600; }
+  .s-bar .crumbs span + span::before { content: "/"; margin: 0 6px; color: var(--rule-strong); }
+  .s-bar .right { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .s-body { padding: 14px 16px 16px; overflow-x: auto; }
+  .s-foot { display: flex; gap: 14px; padding: 5px 14px; border-top: 1px solid var(--rule); background: var(--slate); font-size: 11px; color: var(--muted); overflow-x: auto; white-space: nowrap; }
+  .s-foot kbd { font-family: var(--sans); font-size: 10.5px; border: 1px solid var(--rule-strong); border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; margin-right: 4px; background: var(--paper); color: var(--ink-2); }
+  .s-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 12px; }
+  .s-table th { font-size: 10.5px; font-weight: 600; color: var(--muted); text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--rule-strong); background: var(--paper); white-space: nowrap; }
+  .s-table th.num { text-align: right; }
+  .s-table td { padding: 5px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  .s-table tr.grp td { font-weight: 600; background: var(--slate); }
+  .s-table tr.grp td:first-child::before { content: "\2212\00a0"; color: var(--muted); font-weight: 400; }
+  .s-table tr.lvl2 td:first-child { padding-left: 22px; }
+  .s-table tr.lvl2 td:first-child::before { content: "\2212\00a0"; color: var(--muted); }
+  .s-table tr.lvl3 td:first-child { padding-left: 40px; }
+  .s-table tfoot td { font-weight: 600; border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); }
+  .s-table .pos { color: var(--credit); }
+  .s-table .ok { color: var(--credit); font-weight: 600; }
+  .s-table .ok::before { content: "\2713\00a0"; }
+  .drop { border: 1px dashed var(--rule-strong); border-radius: 4px; padding: 16px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; background: var(--page); }
+  .drop .file { width: 40px; height: 50px; border: 1.5px solid var(--rule-strong); border-radius: 3px; position: relative; background: var(--paper); }
+  .drop .file::after { content: "PDF"; position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 9px; font-weight: 700; color: var(--muted); letter-spacing: 0.06em; }
+  .drop .fname { font-weight: 600; }
+  .drop .fmeta { color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  .kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 14px; margin-top: 14px; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; }
+  .s-actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
+  .s-actions .hint { color: var(--muted); font-size: 11.5px; }
+  .bs { display: grid; grid-template-columns: 1fr 1fr; gap: 0 24px; }
+  .bs .col h4 { font-size: 11px; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--rule-strong); letter-spacing: 0.02em; }
+  .bs table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .bs td { padding: 5px 8px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  .bs td.num { text-align: right; }
+  .bs tr.sub td { color: var(--muted); font-size: 11.5px; padding-left: 20px; border-bottom: 0; padding-top: 1px; padding-bottom: 3px; }
+  .bs tr.sub td.num { padding-left: 8px; }
+  .bs tfoot td { font-weight: 600; border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); }
+  .bs-note { margin-top: 12px; font-size: 11.5px; color: var(--muted); }
+
+  /* What it covers: two ruled ledgers */
+  .covers { display: grid; gap: 48px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); }
+  .covers h3 { font-size: 15px; font-weight: 600; padding-bottom: 10px; border-bottom: 1px solid var(--ink); }
+  .ledger { list-style: none; }
+  .ledger li { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--rule); font-size: 15px; line-height: 1.45; align-items: baseline; }
+  .ledger li .k { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .ledger li .v { color: var(--ink); }
+  .ledger li .v small { display: block; color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+
+  /* Built for */
+  .fits { display: grid; gap: 0 40px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); border-top: 1px solid var(--ink); }
+  .fit { padding: 22px 0 28px; border-bottom: 1px solid var(--rule); }
+  .fit h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
+  .fit .who { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+  .fit p { margin-top: 14px; font-size: 15px; color: var(--ink-2); max-width: 40ch; }
+
+  /* Trust: stated, not decorated */
+  .facts { list-style: none; border-top: 1px solid var(--ink); max-width: 78ch; }
+  .facts li { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 15.5px; line-height: 1.5; }
+  .facts li b { font-weight: 600; }
+  .facts li span { color: var(--ink-2); }
+
+  /* Keyboard */
+  .keyrows { display: grid; gap: 14px; margin-top: 8px; }
+  .keyrow { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; }
+  .keyrow .lbl { font-size: 12.5px; color: var(--muted); font-weight: 500; width: 120px; flex-shrink: 0; }
+  .key { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+  .key kbd {
+    font-family: var(--sans); font-size: 12.5px; font-weight: 600; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--rule-strong); border-bottom-width: 3px; border-radius: 5px; padding: 4px 9px; min-width: 38px; text-align: center; line-height: 1.2;
+  }
+
+  /* Pricing */
+  .price { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 48px; align-items: start; }
+  .price .terms { list-style: none; border-top: 1px solid var(--ink); }
+  .price .terms li { padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 15.5px; display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; }
+  .price .terms li b { font-weight: 600; }
+  .price .terms li span { color: var(--ink-2); }
+  .quote { background: var(--slate); padding: 24px 26px 26px; border-radius: 4px; }
+  .quote h3 { font-size: 19px; letter-spacing: -0.015em; }
+  .quote p { margin-top: 10px; font-size: 14.5px; color: var(--ink-2); }
+  .quote .btn { margin-top: 18px; }
+  .quote .alt { margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+
+  /* FAQ */
+  .faq { border-top: 1px solid var(--ink); max-width: 78ch; }
+  .faq details { border-bottom: 1px solid var(--rule); }
+  .faq summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 16px 0; font-size: 16.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; font-weight: 400; font-size: 22px; color: var(--muted); line-height: 1; flex-shrink: 0; }
+  .faq details[open] summary::after { content: "\2212"; }
+  .faq .a { padding: 0 0 18px; font-size: 15.5px; color: var(--ink-2); max-width: 66ch; line-height: 1.6; }
+  .faq .a p + p { margin-top: 10px; }
+
+  /* Footer */
+  footer { margin-top: 72px; border-top: 3px double var(--ink); padding-block: 28px 40px; display: grid; gap: 20px 40px; grid-template-columns: minmax(0, 1fr) auto; align-items: start; font-size: 14px; color: var(--muted); }
+  footer .lockup .word { font-size: 16px; }
+  footer .lines { margin-top: 10px; line-height: 1.6; max-width: 60ch; }
+  footer .right { text-align: right; line-height: 1.8; }
+  footer a { color: var(--ink-2); }
+
+  /* Brand switch: review-only control, delete before go-live */
+  .brand-switch {
+    position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+    display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 12px;
+    background: var(--paper); border: 1px solid var(--rule-strong); border-radius: 999px;
+    box-shadow: 0 8px 24px -12px rgba(13, 24, 36, 0.45); font-size: 12.5px; color: var(--muted);
+  }
+  .brand-switch .lbl { margin-right: 6px; font-weight: 500; }
+  .brand-switch button {
+    font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; border: 0; background: transparent; color: var(--ink-2);
+    padding: 6px 12px; border-radius: 999px;
+  }
+  .brand-switch button[aria-pressed="true"] { background: var(--navy); color: var(--on-navy); }
+
+  @media (max-width: 900px) {
+    .hero .in { grid-template-columns: 1fr; gap: 40px; }
+    .step { grid-template-columns: 1fr; gap: 20px; }
+    .chain-row { grid-template-columns: 1fr; gap: 12px; }
+    .price { grid-template-columns: 1fr; }
+    .top nav { display: none; }
+  }
+  @media (max-width: 600px) {
+    .hero { padding-block: 44px 52px; }
+    .voucher { padding: 16px 14px 14px; font-size: 12.5px; }
+    .ledger li { grid-template-columns: 1fr; gap: 2px; }
+    .facts li { grid-template-columns: 1fr; gap: 4px; }
+    .price .terms li { grid-template-columns: 1fr; gap: 2px; }
+    .keyrow .lbl { width: 100%; }
+    .bs { grid-template-columns: 1fr; }
+    footer { grid-template-columns: 1fr; }
+    footer .right { text-align: left; }
+    .brand-switch .lbl { display: none; }
+    .brand-switch { padding-left: 4px; }
+  }
+</style>
+
+<header class="top">
+  <div class="in">
+    <a class="lockup" href="#top" aria-label="Home">
+      <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18 L9 12 L13 15 L20 6"/><path d="M14 6 H20 V12"/></svg>
+      <span class="word" data-brand>ScripBooks</span>
+    </a>
+    <nav aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#covers">What it covers</a>
+      <a href="#for">Who it is for</a>
+      <a href="#trust">Trust</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <a class="btn btn-navy btn-sm cta" href="mailto:manish.pali@heureuxsoftware.com?subject=Demo%20request">Book a demo</a>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <div class="in">
+      <div>
+        <p class="eyebrow">Accounting for entities that hold listed securities</p>
+        <h1>Books and portfolio, one ledger.</h1>
+        <p class="lede">Import the contract note, post the vouchers, and see FIFO profit and the balance sheet in one keyboard-first workspace built for Indian investing entities. <strong><span data-brand>ScripBooks</span></strong> keeps the statutory books and the holdings as the same record, so nothing is exported and nothing is reconciled twice.</p>
+        <div class="actions">
+          <a class="btn btn-light" href="mailto:manish.pali@heureuxsoftware.com?subject=Demo%20request">Book a demo</a>
+          <a class="btn btn-quiet" href="#how">See how it works</a>
+        </div>
+        <p class="proof">Cash equity on NSE and BSE. Any broker's contract note, PDF or HTML, password-protected or not. Double-entry underneath, with GST, TDS and an edit log the app cannot bypass.</p>
+      </div>
+
+      <div class="voucher" role="figure" aria-label="Example purchase voucher posted from a contract note">
+        <div class="v-head">
+          <div>
+            <div class="v-type">Purchase voucher</div>
+            <div class="v-meta"><span class="mono">2026-27/PUR/0418</span><span>14 Sep 2026</span><span>Settlement <span class="mono">2026187</span></span></div>
+          </div>
+          <div class="v-status">Posted</div>
+        </div>
+        <div class="v-src">Read from <span class="mono">CN-4471-20260914.pdf</span>, checked against itself, posted. Amounts in rupees.</div>
+        <table class="v-table">
+          <thead><tr><th>Particulars</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead>
+          <tbody>
+            <tr class="acct"><td>Investments in equity shares</td><td class="num">3,52,890.00</td><td class="num"></td></tr>
+            <tr class="sub"><td>RELIANCE, 50 at 2,948.40</td><td class="num">1,47,420.00</td><td class="num"></td></tr>
+            <tr class="sub"><td>HDFCBANK, 120 at 1,712.25</td><td class="num">2,05,470.00</td><td class="num"></td></tr>
+            <tr class="acct"><td>Brokerage</td><td class="num">882.23</td><td class="num"></td></tr>
+            <tr class="acct"><td>Securities transaction tax</td><td class="num">352.89</td><td class="num"></td></tr>
+            <tr class="acct"><td>Exchange transaction charges</td><td class="num">10.48</td><td class="num"></td></tr>
+            <tr class="acct"><td>SEBI turnover fees</td><td class="num">0.35</td><td class="num"></td></tr>
+            <tr class="acct"><td>Stamp duty</td><td class="num">52.93</td><td class="num"></td></tr>
+            <tr class="acct"><td>GST on brokerage and charges</td><td class="num">160.75</td><td class="num"></td></tr>
+            <tr class="acct"><td>Other charges</td><td class="num">0.35</td><td class="num"></td></tr>
+            <tr class="acct"><td>Broker, trading account 4471</td><td class="num"></td><td class="num">3,54,349.98</td></tr>
+          </tbody>
+          <tfoot><tr><td>Total</td><td class="num">3,54,349.98</td><td class="num">3,54,349.98</td></tr></tfoot>
+        </table>
+        <div class="v-foot"><span>Seven charge heads, each on its own ledger.</span><b>Debits equal credits</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <section id="problem">
+      <div class="sec-head">
+        <h2>Today it takes two systems and an export utility.</h2>
+        <p class="lede">A portfolio tracker reads the contract notes and works out the gains. An accounting package keeps the statutory books. Between them sit a journal-export step, a spreadsheet, and someone re-keying whatever did not come across. When the two disagree at year end, the difference is found by hand.</p>
+        <p class="lede">One record instead. The contract note posts as a voucher, the voucher is the holding, the holding is the balance-sheet line. Nothing is exported because nothing is separate.</p>
+      </div>
+      <div class="chains">
+        <div class="chain-row">
+          <div class="who">Today<small>Two products, one utility</small></div>
+          <div class="chain"><span>Portfolio tracker</span><i></i><span>Journal export</span><i></i><span>Accounting package</span><i></i><span>Reconciling spreadsheet</span></div>
+          <div class="verdict">Two records of the same trades. The auditor asks which one is right.</div>
+        </div>
+        <div class="chain-row now">
+          <div class="who"><span data-brand>ScripBooks</span><small>One workspace</small></div>
+          <div class="chain"><span>Contract note</span><i></i><span>Voucher</span><i></i><span>Holding</span><i></i><span>Balance sheet</span></div>
+          <div class="verdict">One record. The stock summary and the balance sheet agree because they are the same figures.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="sec-head">
+        <h2>From contract note to balance sheet, in four steps.</h2>
+        <p class="lede">The screens below show one contract note going through. Nothing posts on trust: every figure is recomputed and compared to the note before a voucher exists.</p>
+      </div>
+      <div class="steps">
+
+        <div class="step">
+          <div>
+            <div class="n">Step 1 of 4</div>
+            <h3>Upload the contract note.</h3>
+            <p>PDF or HTML, from any broker, with no per-broker template to set up. A password-protected note opens with the password saved on the broker account.</p>
+            <p>A Claude model reads the trades and the charges. It does nothing else in the product.</p>
+          </div>
+          <div class="screen" role="figure" aria-label="Contract note import screen">
+            <div class="s-bar"><span class="crumbs"><span>Securities</span><span>Contract notes</span><span><b>Import</b></span></span><span class="right">Company: Meher Family Investments LLP</span></div>
+            <div class="s-body">
+              <div class="drop">
+                <div class="file"></div>
+                <div><div class="fname mono">CN-4471-20260914.pdf</div><div class="fmeta">184 KB, password-protected, opened with the saved broker password</div></div>
+              </div>
+              <dl class="kv">
+                <dt>Broker</dt><dd>Matched to trading account <span class="mono">4471</span>, demat <span class="mono">1208160012345678</span></dd>
+                <dt>Trades</dt><dd>2 buys on NSE, settlement <span class="mono">2026187</span>, trade date 14 Sep 2026</dd>
+                <dt>Charges</dt><dd>7 heads found: brokerage, STT, exchange, SEBI, stamp duty, GST, other</dd>
+                <dt>Scrips</dt><dd>RELIANCE and HDFCBANK, both present in the scrip master by ISIN</dd>
+              </dl>
+              <div class="s-actions"><span class="btn btn-navy btn-sm">Check against the note</span><span class="hint">Ctrl+A</span></div>
+            </div>
+            <div class="s-foot"><span><kbd>F4</kbd>Contra</span><span><kbd>F5</kbd>Payment</span><span><kbd>F6</kbd>Receipt</span><span><kbd>F7</kbd>Journal</span><span><kbd>F8</kbd>Sales</span><span><kbd>F9</kbd>Purchase</span><span><kbd>Ctrl+A</kbd>Accept</span><span><kbd>Esc</kbd>Quit</span></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div>
+            <div class="n">Step 2 of 4</div>
+            <h3>The reconciliation guard checks it.</h3>
+            <p>Gross value, each charge head and the net payable are recomputed from the trade lines and compared to what the note prints. A mismatch on any line stops the import and shows the line.</p>
+            <p>You post. The software does not post for you.</p>
+          </div>
+          <div class="screen" role="figure" aria-label="Reconciliation guard screen">
+            <div class="s-bar"><span class="crumbs"><span>Securities</span><span>Contract notes</span><span><b>Check</b></span></span><span class="right"><span class="mono">CN-4471-20260914.pdf</span></span></div>
+            <div class="s-body">
+              <table class="s-table">
+                <thead><tr><th>Figure</th><th class="num">On the note</th><th class="num">Recomputed</th><th>Result</th></tr></thead>
+                <tbody>
+                  <tr><td>Gross traded value</td><td class="num">3,52,890.00</td><td class="num">3,52,890.00</td><td class="ok">Ties</td></tr>
+                  <tr><td>Brokerage</td><td class="num">882.23</td><td class="num">882.23</td><td class="ok">Ties</td></tr>
+                  <tr><td>Securities transaction tax</td><td class="num">352.89</td><td class="num">352.89</td><td class="ok">Ties</td></tr>
+                  <tr><td>Exchange transaction charges</td><td class="num">10.48</td><td class="num">10.48</td><td class="ok">Ties</td></tr>
+                  <tr><td>SEBI turnover fees</td><td class="num">0.35</td><td class="num">0.35</td><td class="ok">Ties</td></tr>
+                  <tr><td>Stamp duty</td><td class="num">52.93</td><td class="num">52.93</td><td class="ok">Ties</td></tr>
+                  <tr><td>GST</td><td class="num">160.75</td><td class="num">160.75</td><td class="ok">Ties</td></tr>
+                  <tr><td>Other charges</td><td class="num">0.35</td><td class="num">0.35</td><td class="ok">Ties</td></tr>
+                  <tr><td>Net payable</td><td class="num">3,54,349.98</td><td class="num">3,54,349.98</td><td class="ok">Ties</td></tr>
+                </tbody>
+              </table>
+              <div class="s-actions"><span class="btn btn-navy btn-sm">Post as 2026-27/PUR/0418</span><span class="hint">All nine figures tie. Posting credits Broker, trading account 4471.</span></div>
+            </div>
+            <div class="s-foot"><span><kbd>Ctrl+A</kbd>Accept</span><span><kbd>Esc</kbd>Quit</span><span><kbd>Alt+B</kbd>New broker</span></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div>
+            <div class="n">Step 3 of 4</div>
+            <h3>Holdings roll up by class, type and scrip.</h3>
+            <p>Weighted-average cost in the books, FIFO profit on screen, and market value at last night's NSE and BSE close. Open a class to see its types, a type to see its scrips, a scrip to see the day-wise ledger.</p>
+            <p>Thirteen valuation views in the Tally F12 shape, including valuation as on any date for the auditor.</p>
+          </div>
+          <div class="screen" role="figure" aria-label="Stock summary screen">
+            <div class="s-bar"><span class="crumbs"><span>Reports</span><span><b>Stock summary</b></span></span><span class="right">As on 15 Sep 2026, close of NSE</span></div>
+            <div class="s-body">
+              <table class="s-table">
+                <thead><tr><th>Scrip</th><th class="num">Qty</th><th class="num">Avg cost</th><th class="num">Cost value</th><th class="num">Close</th><th class="num">Market value</th><th class="num">FIFO profit</th></tr></thead>
+                <tbody>
+                  <tr class="grp"><td>Investments</td><td class="num"></td><td class="num"></td><td class="num">34,26,865.00</td><td class="num"></td><td class="num">35,37,571.50</td><td class="num pos">57,735.75</td></tr>
+                  <tr class="lvl2"><td>Equity shares, listed</td><td class="num"></td><td class="num"></td><td class="num">34,26,865.00</td><td class="num"></td><td class="num">35,37,571.50</td><td class="num pos">57,735.75</td></tr>
+                  <tr class="lvl3"><td>RELIANCE</td><td class="num">250</td><td class="num">2,871.60</td><td class="num">7,17,900.00</td><td class="num">2,962.15</td><td class="num">7,40,537.50</td><td class="num pos">18,420.00</td></tr>
+                  <tr class="lvl3"><td>HDFCBANK</td><td class="num">600</td><td class="num">1,654.30</td><td class="num">9,92,580.00</td><td class="num">1,718.90</td><td class="num">10,31,340.00</td><td class="num pos">9,860.50</td></tr>
+                  <tr class="lvl3"><td>TCS</td><td class="num">120</td><td class="num">3,988.75</td><td class="num">4,78,650.00</td><td class="num">3,904.20</td><td class="num">4,68,504.00</td><td class="num">0.00</td></tr>
+                  <tr class="lvl3"><td>INFY</td><td class="num">400</td><td class="num">1,512.40</td><td class="num">6,04,960.00</td><td class="num">1,566.35</td><td class="num">6,26,540.00</td><td class="num pos">24,310.00</td></tr>
+                  <tr class="lvl3"><td>ITC</td><td class="num">1,500</td><td class="num">421.85</td><td class="num">6,32,775.00</td><td class="num">447.10</td><td class="num">6,70,650.00</td><td class="num pos">5,145.25</td></tr>
+                </tbody>
+                <tfoot><tr><td>Total</td><td class="num"></td><td class="num"></td><td class="num">34,26,865.00</td><td class="num"></td><td class="num">35,37,571.50</td><td class="num pos">57,735.75</td></tr></tfoot>
+              </table>
+            </div>
+            <div class="s-foot"><span><kbd>F7</kbd>Day-wise detail</span><span><kbd>Enter</kbd>Drill</span><span><kbd>Ctrl+K</kbd>Search</span></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div>
+            <div class="n">Step 4 of 4</div>
+            <h3>The balance sheet is the same record.</h3>
+            <p>Investments at cost, broker balances, the charge ledgers and profit on sale all come from the vouchers above. There is no second system to agree it with.</p>
+            <p>Market valuation sits alongside as a note, so the auditor gets both figures from one page.</p>
+          </div>
+          <div class="screen" role="figure" aria-label="Balance sheet screen">
+            <div class="s-bar"><span class="crumbs"><span>Reports</span><span><b>Balance sheet</b></span></span><span class="right">As on 15 Sep 2026</span></div>
+            <div class="s-body">
+              <div class="bs">
+                <div class="col">
+                  <h4>Liabilities</h4>
+                  <table>
+                    <tbody>
+                      <tr><td>Partners' capital</td><td class="num">40,00,000.00</td></tr>
+                      <tr><td>Profit and loss account</td><td class="num">27,617.50</td></tr>
+                      <tr class="sub"><td>Profit on sale of investments</td><td class="num">31,240.00</td></tr>
+                      <tr class="sub"><td>Less brokerage and charges</td><td class="num">3,622.50</td></tr>
+                    </tbody>
+                    <tfoot><tr><td>Total</td><td class="num">40,27,617.50</td></tr></tfoot>
+                  </table>
+                </div>
+                <div class="col">
+                  <h4>Assets</h4>
+                  <table>
+                    <tbody>
+                      <tr><td>Investments in equity shares, at cost</td><td class="num">34,26,865.00</td></tr>
+                      <tr><td>HDFC Bank, current account</td><td class="num">5,88,412.50</td></tr>
+                      <tr><td>Broker, trading account 4471</td><td class="num">12,340.00</td></tr>
+                    </tbody>
+                    <tfoot><tr><td>Total</td><td class="num">40,27,617.50</td></tr></tfoot>
+                  </table>
+                </div>
+              </div>
+              <div class="bs-note">Note: investments at market on 15 Sep 2026, 35,37,571.50. Valuation is shown, not posted.</div>
+            </div>
+            <div class="s-foot"><span><kbd>Enter</kbd>Drill to ledger</span><span><kbd>Alt+F12</kbd>Valuation panel</span><span><kbd>Ctrl+K</kbd>Search</span></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="covers">
+      <div class="sec-head">
+        <h2>What it covers.</h2>
+        <p class="lede">The securities engine is the reason to switch. The statutory ledger underneath is why you can.</p>
+      </div>
+      <div class="covers">
+        <div>
+          <h3>Securities</h3>
+          <ul class="ledger">
+            <li><span class="k">Import</span><span class="v">Contract notes from any broker, PDF or HTML, password-protected. No per-broker setup.</span></li>
+            <li><span class="k">Posting</span><span class="v">Seven charge heads to their own ledgers: brokerage, STT, exchange, SEBI, stamp duty, GST, other.<small>Settlement number on every voucher.</small></span></li>
+            <li><span class="k">Profit</span><span class="v">Weighted-average cost in the books, FIFO profit on screen, both visible at once.<small>Thirteen valuation views in the Tally F12 shape.</small></span></li>
+            <li><span class="k">Prices</span><span class="v">NSE and BSE closing prices every night, about 20,000 instruments.</span></li>
+            <li><span class="k">Masters</span><span class="v">Brokers with trading and demat accounts. Scrip master with ISIN check digits. Unlisted to listed conversion.</span></li>
+            <li><span class="k">Sub-accounts</span><span class="v">Partner sub-accounts for jointly funded purchases, with the split on the voucher.</span></li>
+            <li><span class="k">Off-market</span><span class="v">IPO and anchor allotments with SEBI lock-in dates, rights, FPO, off-market transfers.</span></li>
+            <li><span class="k">Corporate actions</span><span class="v">Bonus, split, demerger and buyback, applied to holdings and cost on the record date.</span></li>
+            <li><span class="k">Capital gains</span><span class="v">Short-term and long-term gains in the ITR schedule format, with section 112A grandfathering, from the same FIFO engine.</span></li>
+            <li><span class="k">Asset classes</span><span class="v">Listed equity, mutual funds through CAS import, and futures and options with mark-to-market.</span></li>
+            <li><span class="k">Valuation</span><span class="v">Valuation as on any date, at cost, at market, or the higher of the two.</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Statutory books</h3>
+          <ul class="ledger">
+            <li><span class="k">GST</span><span class="v">GSTR-1, GSTR-3B and the HSN summary in the portal's format. You review and file.</span></li>
+            <li><span class="k">E-invoicing</span><span class="v">IRN and QR through the NIC portal. E-way bills.</span></li>
+            <li><span class="k">TDS</span><span class="v">Section masters, deductions on vouchers, Form 26Q.</span></li>
+            <li><span class="k">Banking</span><span class="v">Statement import, matching, bank reconciliation statement.</span></li>
+            <li><span class="k">Reports</span><span class="v">Day book, trial balance, profit and loss, balance sheet, ageing, bills to make and to come.</span></li>
+            <li><span class="k">Inventory</span><span class="v">Godowns, batches, sales and purchase orders, delivery and receipt notes, physical stock, for a trading business in the same books.</span></li>
+            <li><span class="k">Cost centres</span><span class="v">Cost categories and centres, budgets and variance.</span></li>
+            <li><span class="k">Companies</span><span class="v">Unlimited companies in a workspace, five roles per company, invites.</span></li>
+            <li><span class="k">Tally import</span><span class="v">Masters and vouchers from Tally XML, so opening balances and history come with you.</span></li>
+            <li><span class="k">Edit log</span><span class="v">Every create, alteration, deletion and restore, written by the database. Soft delete only.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="for">
+      <div class="sec-head">
+        <h2>Built for entities that hold securities and keep books.</h2>
+        <p class="lede">Not a portfolio app for individuals, and not a broker back office. The buyer is an entity with a statutory balance sheet and a demat account.</p>
+      </div>
+      <div class="fits">
+        <div class="fit">
+          <h3>Family offices and family investment companies</h3>
+          <div class="who">The family's LLPs, private companies and trusts</div>
+          <p>Every entity in one workspace. Contract notes become vouchers without re-keying, partner sub-accounts split a jointly funded purchase, and the as-on-date valuation and the edit log go to the family's auditor as they are.</p>
+        </div>
+        <div class="fit">
+          <h3>CA firms and accounting outsourcers</h3>
+          <div class="who">Serving investor and trading-business clients</div>
+          <p>A company per client and roles per company. Staff who know Tally's F-keys need no retraining. GST and TDS for the client's operating business live in the same books. Opening balances and history come across from Tally XML.</p>
+        </div>
+        <div class="fit">
+          <h3>Proprietary trading firms and LLP trading books</h3>
+          <div class="who">Cash equity, partner capital</div>
+          <p>Stock-in-trade classification, a ledger per charge head, settlement-numbered vouchers, and sub-accounts for each partner's capital. Cash equity today, with futures and options as an asset class for desks that trade them.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="trust">
+      <div class="sec-head">
+        <h2>What holds the record.</h2>
+        <p class="lede">These are properties of the database, not promises in a policy.</p>
+      </div>
+      <ul class="facts">
+        <li><b>Row-level security</b><span>Every table is isolated per workspace inside Postgres. The application cannot read across a boundary even if it tries.</span></li>
+        <li><b>Edit log by trigger</b><span>Every create, alteration, deletion and restore is written by the database itself, with who, when and what changed. The app has no code path that writes it.</span></li>
+        <li><b>Soft delete only</b><span>Nothing is ever removed from the record. Deleted entries leave the reports and stay in the log.</span></li>
+        <li><b>Daily backups</b><span>A full database backup every Sunday and a differential every other day, shipped to Azure Blob storage, with a scripted restore drill that boots a copy and compares row counts.</span></li>
+        <li><b>Roles per company</b><span>Five roles, from owner to viewer, set per company inside a workspace. Invitations, not shared passwords.</span></li>
+        <li><b>The model reads notes</b><span>A Claude model reads the contract note and nothing else. A deterministic check recomputes every figure, and you confirm before a voucher exists.</span></li>
+      </ul>
+    </section>
+
+    <section id="keys">
+      <div class="sec-head">
+        <h2>Your staff already know this.</h2>
+        <p class="lede">Vouchers open on the F-keys Tally uses. Accept with Ctrl+A, quit with Esc, find anything with Ctrl+K. Every voucher and master is built to be completed without touching the mouse.</p>
+      </div>
+      <div class="keyrows">
+        <div class="keyrow"><span class="lbl">Vouchers</span>
+          <span class="key"><kbd>F4</kbd>Contra</span><span class="key"><kbd>F5</kbd>Payment</span><span class="key"><kbd>F6</kbd>Receipt</span><span class="key"><kbd>F7</kbd>Journal</span><span class="key"><kbd>F8</kbd>Sales</span><span class="key"><kbd>F9</kbd>Purchase</span>
+        </div>
+        <div class="keyrow"><span class="lbl">Inventory</span>
+          <span class="key"><kbd>Alt+F7</kbd>Stock journal</span><span class="key"><kbd>Alt+F8</kbd>Delivery note</span><span class="key"><kbd>Alt+F9</kbd>Receipt note</span><span class="key"><kbd>Alt+F10</kbd>Physical stock</span>
+        </div>
+        <div class="keyrow"><span class="lbl">In a form</span>
+          <span class="key"><kbd>Ctrl+A</kbd>Accept</span><span class="key"><kbd>Esc</kbd>Quit</span><span class="key"><kbd>Alt+B</kbd>New broker</span><span class="key"><kbd>Ctrl+K</kbd>Search</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="sec-head">
+        <h2>Priced per entity group, not per portfolio.</h2>
+        <p class="lede">One workspace holds every company in the family or the firm. The price does not change when you add an entity, a user or a demat account.</p>
+      </div>
+      <div class="price">
+        <ul class="terms">
+          <li><b>Workspace</b><span>Unlimited companies, unlimited users, all roles.</span></li>
+          <li><b>Contract notes</b><span>Unlimited imports. No per-note or per-broker charge.</span></li>
+          <li><b>Prices</b><span>NSE and BSE closing prices included, updated nightly.</span></li>
+          <li><b>Billing</b><span>Annual, invoiced with GST.</span></li>
+          <li><b>Onboarding</b><span>Opening balances, scrip master and broker accounts set up with you on a call.</span></li>
+          <li><b>Data</b><span>Yours. Reports export to CSV at any time, and a full export is available on request.</span></li>
+        </ul>
+        <div class="quote">
+          <h3>Ask for a quote</h3>
+          <p>Tell us how many entities and roughly how many contract notes a month. You get a number in writing and a demo on your own contract notes.</p>
+          <a class="btn btn-navy" href="mailto:manish.pali@heureuxsoftware.com?subject=Pricing%20for%20our%20entities">Ask for pricing</a>
+          <div class="alt">Or write to <a href="mailto:manish.pali@heureuxsoftware.com">manish.pali@heureuxsoftware.com</a></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="sec-head">
+        <h2>Questions a CA asks first.</h2>
+      </div>
+      <div class="faq">
+        <details open>
+          <summary>Can we import from Tally?</summary>
+          <div class="a"><p>Yes. Masters and vouchers come across through Tally XML, so opening balances and history arrive with you. The chart of accounts keeps its groups, and vouchers keep their numbers and dates.</p></div>
+        </details>
+        <details>
+          <summary>Who owns the data?</summary>
+          <div class="a"><p>You do. Each workspace is isolated by row-level security in Postgres. Every report exports to CSV, the GST returns export in the portal's format, and a full export of a workspace is available on request.</p></div>
+        </details>
+        <details>
+          <summary>Do you file our returns?</summary>
+          <div class="a"><p>No. <span data-brand>ScripBooks</span> generates GSTR-1 and GSTR-3B in the portal's format, Form 26Q, e-invoice and e-way bill requests. You review and file, as you do now.</p></div>
+        </details>
+        <details>
+          <summary>Does the AI do the accounting?</summary>
+          <div class="a"><p>No. A Claude model reads the contract note, and only the contract note. A deterministic check recomputes every figure against the note, and you confirm before a voucher exists. Every other entry is yours, on the keyboard.</p></div>
+        </details>
+        <details>
+          <summary>Which brokers are supported?</summary>
+          <div class="a"><p>Any broker that issues a contract note. There is no per-broker template; the reader works from the note itself, PDF or HTML, password-protected or not. The broker, trading account and demat account are matched to your masters on import.</p></div>
+        </details>
+        <details>
+          <summary>How is profit computed?</summary>
+          <div class="a"><p>Weighted-average cost in the books and FIFO on screen, both visible at once. Sells post at weighted-average cost so the ledger stays in the shape your auditor expects, and the FIFO column shows the gain for the tax computation.</p></div>
+        </details>
+        <details>
+          <summary>Is it also the ledger for the operating business?</summary>
+          <div class="a"><p>Yes. For a trading or distribution company, GST, e-invoicing, e-way bills, TDS, inventory with godowns and batches, orders, cost centres and budgets are all in the same books, in the same keyboard-first shape.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <footer>
+      <div>
+        <a class="lockup" href="#top" aria-label="Home">
+          <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18 L9 12 L13 15 L20 6"/><path d="M14 6 H20 V12"/></svg>
+          <span class="word" data-brand>ScripBooks</span>
+        </a>
+        <div class="lines">Double-entry accounting for Indian entities that hold listed securities. Cash equity on NSE and BSE. Generates returns; you file them.</div>
+      </div>
+      <div class="right">
+        <div><span data-brand-domain>scripbooks.com</span></div>
+        <div><a href="mailto:manish.pali@heureuxsoftware.com">manish.pali@heureuxsoftware.com</a></div>
+        <div>Heureux Software Solutions, 2026</div>
+      </div>
+    </footer>
+
+  </div>
+</main>
+
+<div class="brand-switch" role="group" aria-label="Product name under review">
+  <span class="lbl">Name</span>
+  <button type="button" id="brand-scripbooks" data-key="scripbooks" aria-pressed="true">ScripBooks</button>
+  <button type="button" id="brand-ledgerfolio" data-key="ledgerfolio" aria-pressed="false">LedgerFolio</button>
+</div>
+
+<script>
+  (function () {
+    var BRANDS = {
+      scripbooks: { name: "ScripBooks", domain: "scripbooks.com" },
+      ledgerfolio: { name: "LedgerFolio", domain: "ledgerfolio.in" }
+    };
+    function apply(key) {
+      var b = BRANDS[key] || BRANDS.scripbooks;
+      document.querySelectorAll("[data-brand]").forEach(function (el) { el.textContent = b.name; });
+      document.querySelectorAll("[data-brand-domain]").forEach(function (el) { el.textContent = b.domain; });
+      document.querySelectorAll(".brand-switch button").forEach(function (btn) {
+        btn.setAttribute("aria-pressed", String(btn.getAttribute("data-key") === key));
+      });
+      try { localStorage.setItem("landing.brand", key); } catch (e) {}
+    }
+    var key = null;
+    try { key = new URLSearchParams(location.search).get("brand"); } catch (e) {}
+    if (!key) { try { key = localStorage.getItem("landing.brand"); } catch (e) {} }
+    apply(key && BRANDS[key] ? key : "scripbooks");
+    document.querySelectorAll(".brand-switch button").forEach(function (btn) {
+      btn.addEventListener("click", function () { apply(btn.getAttribute("data-key")); });
+    });
+  })();
+</script>
